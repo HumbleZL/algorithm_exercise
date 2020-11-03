@@ -79,11 +79,23 @@ void clear_lru_cache_node(lru_hash_cache_t* lru_cache, long key)
 
 	lru_cache->hash_table[hash_key] = node->h_next;
 
-	node->prev->next = node->next;
-	node->next->prev = node->prev;
+	if(node->prev != NULL)
+		node->prev->next = node->next;
+	if(node->next != NULL)
+		node->next->prev = node->prev;
+
+	if (lru_cache->head == node)
+	{
+		lru_cache->head = node->next;
+	}
+	if(lru_cache->tail == node)
+	{
+		lru_cache->tail = node->prev;
+	}
 	
-	//free(node->data);
-	//free(node);
+	node->data = NULL;
+	free(node);
+	lru_cache->cache_size--;
 }
 
 lru_hash_node_t * create_cache_node(int key, void * data)
@@ -135,21 +147,26 @@ void release_lru_hash_cache(lru_hash_cache_t * lru_cache)
 	lru_hash_node_t * next_node = NULL;
 	while(node != NULL)
 	{
-		next_node = node->next;
-		clear_lru_cache_node(lru_cache, node->key);
+		lru_hash_node_t * next_node = node->next;
+		free(node);
 		node = next_node;
 	}
-	//memset(lru_cache->hash_table, 0, sizeof(lru_hash_node_t *) * lru_cache->hash_table_size);
-	//free(lru_cache->hash_table);
-
-	//free(lru_cache);
+	
+	free(lru_cache->hash_table);
+	lru_cache->hash_table = NULL;
+	free(lru_cache);
+	lru_cache = NULL;
 }
 
 
 // ================================== test case ==================================
 void print_cache(lru_hash_cache_t * lru_cache)
 {
-	if(lru_cache == NULL) return;
+	if(lru_cache == NULL)
+	{
+		printf("empty cache\n");
+		return;
+	}
 	lru_hash_node_t * node = lru_cache->head;
 	int i = 0;
 	printf("cache content:\n");
